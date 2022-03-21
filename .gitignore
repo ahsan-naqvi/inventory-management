@@ -1,0 +1,29 @@
+# Don't check auto-generated stuff into git
+coverage
+build
+dist
+node_modules
+client/node_modules
+server/node_modules
+stats.json
+
+# Cruft
+.DS_Store
+npm-debug.log
+.idea
+
+# firebase
+.firebase/
+.firebaserc
+database.rules.json
+firebase.json
+
+# properties
+package-lock.json
+yarn.lock
+yarn-error.log
+.eslintcache
+
+# editor
+.vscode/
+jsconfig.json
