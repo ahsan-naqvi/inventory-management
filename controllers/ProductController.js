@@ -118,10 +118,9 @@ export const InsertAndUpdateWarehouseProducts = async (req,res) =>{
                 var dbObjWarehouse = await WarehouseModel.findOne({Barcode: x.Barcode});
 
                 if(dbObjWarehouse != null)
-                {         
-                    if(dbObjStore.Quantity != x.Quantity)
+                {  
+                    if(dbObjWarehouse.Quantity != x.Quantity)
                     {
-
                         const Warehouse_hObj = new Warehouse_hModel({ 
                             Barcode: dbObjWarehouse.Barcode, 
                             Quantity: dbObjWarehouse.Quantity, 
