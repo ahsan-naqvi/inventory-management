@@ -9,11 +9,13 @@ import fs from "fs" ;
 
 export const FindAllProducts = async (req,res) =>{
     try {
-        const WarehouseList = await WarehouseModel.find().sort('Barcode').skip(0).limit(10);
         const StoreList = await StoreModel.find().sort('Barcode').skip(0).limit(10);
+        const WarehouseList = await WarehouseModel.find({ Barcode: { $in: StoreList.map((x) => x.Barcode) }}).sort('Barcode');//.skip(0).limit(10);
+        
         const TotalRecord = await StoreModel.count();
+        
         let ProductList = PrepareClientProductList(WarehouseList, StoreList);    
-        console.log(WarehouseList, StoreList);
+        
         res.status(200).json({ProductList, TotalRecord});
 
     } catch (error) {
@@ -24,13 +26,12 @@ export const FindAllProducts = async (req,res) =>{
 export const FindProductsByBarcode = async (req,res) => {
     try {
         const { searchText } = req.query;
-        const WarehouseFilteredList = await WarehouseModel.find({Barcode: new RegExp('.*'+searchText+'.*')});
-        const StoreFilteredList = await StoreModel.find({Barcode: new RegExp('.*'+searchText+'.*')});        
+        const StoreFilteredList = await StoreModel.find({Barcode: new RegExp('.*'+searchText+'.*')}).sort('Barcode');        
+        const WarehouseFilteredList = await WarehouseModel.find({ Barcode: { $in: StoreFilteredList.map((x) => x.Barcode) }}).sort('Barcode');
 
         let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);  
-        console.log(ProductFilteredList)
-
-        res.status(200).json(ProductFilteredList);
+        
+        res.status(200).json({ProductList: ProductFilteredList});
 
     } catch (error) {
         res.status(404).json({message: error.message });
@@ -43,8 +44,8 @@ export const GetSortedProductsData = async (req,res) => {
     try {
         const { columnName, sortDirection, columnType, skip, limit } = req.query;
         
-        const WarehouseFilteredList = await WarehouseModel.find();
-        const StoreFilteredList = await StoreModel.find();        
+        const StoreFilteredList = await StoreModel.find().skip(0).limit(10);
+        const WarehouseFilteredList = await WarehouseModel.find({ Barcode: { $in: StoreFilteredList.map((x) => x.Barcode) }});
 
         let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);  
         if(columnType == 'string'){            
@@ -66,7 +67,7 @@ export const GetSortedProductsData = async (req,res) => {
         }
         console.log(ProductFilteredList)
 
-        res.status(200).json(ProductFilteredList);
+        res.status(200).json({ProductList: ProductFilteredList});
 
     } catch (error) {
         res.status(404).json({message: error.message });
@@ -80,14 +81,12 @@ export const ChangePage = async (req,res) => {
         const limit = parseInt(size);
         const skip = (parseInt(page) - 1) * limit;
         console.log(page,limit,skip)
-        const WarehouseFilteredList = await WarehouseModel.find().sort('Barcode').skip(skip).limit(limit);
         const StoreFilteredList = await StoreModel.find().sort('Barcode').skip(skip).limit(limit);        
+        const WarehouseFilteredList = await WarehouseModel.find({ Barcode: { $in: StoreFilteredList.map((x) => x.Barcode) }}).sort('Barcode');//.skip(skip).limit(limit);
 
         let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);  
-
-        // console.log('Page   ', ProductFilteredList)
-
-        res.status(200).json(ProductFilteredList);
+        
+        res.status(200).json({ProductList: ProductFilteredList});
 
     } catch (error) {
         res.status(404).json({message: error.message });
