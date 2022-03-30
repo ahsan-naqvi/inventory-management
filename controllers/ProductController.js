@@ -128,7 +128,7 @@ export const InsertAndUpdateWarehouseProducts = async (req,res) =>{
                             UpdatedBy: dbObjWarehouse.UpdatedBy,  
                             UpdatedOn: dbObjWarehouse.UpdatedOn,
                             PostedBy: "PostingUser"                         
-                        });                    
+                        });
                         await Warehouse_hObj.save();
     
                         const updatedObj = await WarehouseModel.findByIdAndUpdate(
