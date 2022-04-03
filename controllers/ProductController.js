@@ -9,13 +9,15 @@ import fs from "fs" ;
 
 export const FindAllProducts = async (req,res) =>{
     try {
+        const { columnName, sortDirection, columnType } = req.query;
         const StoreList = await StoreModel.find().sort('Barcode').skip(0).limit(10);
         const WarehouseList = await WarehouseModel.find({ Barcode: { $in: StoreList.map((x) => x.Barcode) }}).sort('Barcode');//.skip(0).limit(10);
         
         const TotalRecord = await StoreModel.count();
         
         let ProductList = PrepareClientProductList(WarehouseList, StoreList);    
-        
+        SortProductList(columnType, ProductList, columnName, sortDirection);
+        console.log('prod: ', ProductList);
         res.status(200).json({ProductList, TotalRecord});
 
     } catch (error) {
@@ -42,31 +44,15 @@ export const FindProductsByBarcode = async (req,res) => {
 
 export const GetSortedProductsData = async (req,res) => {
     try {
-        const { columnName, sortDirection, columnType, skip, limit } = req.query;
+        const { columnName, sortDirection, columnType } = req.query;
         
-        const StoreFilteredList = await StoreModel.find().skip(0).limit(10);
+        const StoreFilteredList = await StoreModel.find();//.skip(0).limit(10);
         const WarehouseFilteredList = await WarehouseModel.find({ Barcode: { $in: StoreFilteredList.map((x) => x.Barcode) }});
 
         let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);  
-        if(columnType == 'string'){            
-            ProductFilteredList.sort((a, b) => {
-                const nameA = a[columnName].toUpperCase(); // ignore upper and lowercase
-                const nameB = b[columnName].toUpperCase(); // ignore upper and lowercase
-                if (nameA < nameB) {
-                    return sortDirection === 'ASC' ? -1 : 1;
-                }
-                if (nameA > nameB) {
-                    return sortDirection === 'ASC' ? 1 : -1;
-                }
-                // names must be equal
-                return 0;
-            });
-        }
-        else if(columnType == 'number'){            
-            ProductFilteredList.sort(function(a, b){return sortDirection === 'ASC' ? a[columnName] - b[columnName] : b[columnName]-a[columnName]})
-        }
-        console.log(ProductFilteredList)
-
+        await SortProductList(columnType, ProductFilteredList, columnName, sortDirection);
+        ProductFilteredList = ProductFilteredList.slice(0,10);
+        
         res.status(200).json({ProductList: ProductFilteredList});
 
     } catch (error) {
@@ -77,14 +63,17 @@ export const GetSortedProductsData = async (req,res) => {
 
 export const ChangePage = async (req,res) => {
     try {
-        const { page, size } = req.query;
+        const { columnName, sortDirection, columnType, page, size } = req.query;
         const limit = parseInt(size);
         const skip = (parseInt(page) - 1) * limit;
         console.log(page,limit,skip)
-        const StoreFilteredList = await StoreModel.find().sort('Barcode').skip(skip).limit(limit);        
+        const StoreFilteredList = await StoreModel.find().sort('Barcode');//.skip(skip).limit(limit);        
         const WarehouseFilteredList = await WarehouseModel.find({ Barcode: { $in: StoreFilteredList.map((x) => x.Barcode) }}).sort('Barcode');//.skip(skip).limit(limit);
 
-        let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);  
+        let ProductFilteredList = PrepareClientProductList(WarehouseFilteredList, StoreFilteredList);    
+        await SortProductList(columnType, ProductFilteredList, columnName, sortDirection);
+        ProductFilteredList = ProductFilteredList.slice(skip);
+        ProductFilteredList.length = limit;
         
         res.status(200).json({ProductList: ProductFilteredList});
 
@@ -244,6 +233,28 @@ function PrepareClientProductList(WarehouseList, StoreList) {
     });
     return ProductList;
 }
+
+
+async function SortProductList(columnType, ProductFilteredList, columnName, sortDirection) {
+    if (columnType == 'string') {
+        ProductFilteredList.sort((a, b) => {
+            const nameA = a[columnName].toUpperCase(); // ignore upper and lowercase
+            const nameB = b[columnName].toUpperCase(); // ignore upper and lowercase
+            if (nameA < nameB) {
+                return sortDirection === 'ASC' ? -1 : 1;
+            }
+            if (nameA > nameB) {
+                return sortDirection === 'ASC' ? 1 : -1;
+            }
+            // names must be equal
+            return 0;
+        });
+    }
+    else if (columnType == 'number') {
+        ProductFilteredList.sort(function (a, b) { return sortDirection === 'ASC' ? a[columnName] - b[columnName] : b[columnName] - a[columnName]; });
+    }
+}
+
 
 // #endregion
 
